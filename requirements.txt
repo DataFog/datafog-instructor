@@ -1,0 +1,4 @@
+pydantic
+ollama
+ollama-instructor
+python-dotenv

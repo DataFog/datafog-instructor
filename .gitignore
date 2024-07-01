@@ -1,0 +1,4 @@
+.env
+output/
+datafog_instructor.egg-info/
+examples/poc.py
