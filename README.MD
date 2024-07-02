@@ -8,7 +8,7 @@ Check out this 20-second demo of DataFog Instructor in action:
 
 [![DataFog Instructor Demo](https://img.youtube.com/vi/xU8vtcsZCNU/0.jpg)](https://www.youtube.com/watch?v=xU8vtcsZCNU)
 
-This repo can be found at [datafog-ollama-demo](https://github.com/DataFog/datafog-ollama-demo)
+This code for this streamlit demo can be found at [datafog-ollama-demo](https://github.com/DataFog/datafog-ollama-demo)
 
 
 
