@@ -1,44 +1,50 @@
 import json
 from .models import DetectedEntities, EntityType
 from .utils import preprocess_response
-from ollama_instructor.ollama_instructor_client import OllamaInstructorClient
 from typing import Dict, Optional
+from abc import ABC, abstractmethod
+from .llm_factory import get_llm
 
-class DataFog:
-    def __init__(self, host: str = "http://localhost:11434", model: str = "phi3", entity_types: Optional[Dict[str, str]] = None):
+class LLMInterface(ABC):
+    @abstractmethod
+    def generate(self, prompt: str, **kwargs) -> str:
+        pass
+
+class OllamaLLM(LLMInterface):
+    def __init__(self, host: str, model: str):
+        from ollama_instructor.ollama_instructor_client import OllamaInstructorClient
         self.client = OllamaInstructorClient(host=host)
         self.model = model
+
+    def generate(self, prompt: str, **kwargs) -> str:
+        response = self.client.chat_completion(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            format="json",
+            pydantic_model=DetectedEntities,
+        )
+        return response['message']['content']
+
+
+class DataFog:
+    def __init__(self, llm: LLMInterface = None, entity_types: Optional[Dict[str, str]] = None):
+        self.llm = llm or get_llm()
         self.entity_types = entity_types or {e.name: e.value for e in EntityType}
 
     def detect_entities(self, text: str) -> DetectedEntities:
-        response = self.client.chat_completion(
-            model=self.model,
-            pydantic_model=DetectedEntities,
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"Identify and classify named entities in the following text: '{text}'"
-                }
-            ],
-            format="json"
-        )
+        prompt = f"Identify and classify named entities in the following text: '{text}'"
+        response = self.llm.generate(prompt)
 
-        if 'message' in response and 'content' in response['message']:
-            try:
-                content = response['message']['content']
-                if isinstance(content, dict) and 'entities' in content:
-                    # The response is already in the correct format
-                    return DetectedEntities.model_validate(content)
-                elif isinstance(content, dict):
-                    preprocessed_response = preprocess_response(content, self.entity_types)
-                else:
-                    preprocessed_response = preprocess_response(json.loads(content), self.entity_types)
-                
+        try:
+            content = json.loads(response) if isinstance(response, str) else response
+            if isinstance(content, dict) and 'entities' in content:
+                return DetectedEntities.model_validate(content)
+            else:
+                preprocessed_response = preprocess_response(content, self.entity_types)
                 return DetectedEntities.model_validate(preprocessed_response)
-            except Exception as e:
-                raise ValueError(f"Error processing response: {e}. Raw response: {response['message']['content']}")
-        else:
-            raise ValueError(f"Unexpected response format: {response}")
+        except Exception as e:
+            raise ValueError(f"Error processing response: {e}. Raw response: {response}")
+
 
     def add_entity_type(self, name: str, value: str):
         self.entity_types[name.upper()] = value
