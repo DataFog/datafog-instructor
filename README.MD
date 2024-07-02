@@ -2,6 +2,16 @@
 
 DataFog Instructor is a Python SDK for named entity recognition (NER) using Ollama as the LLM backend. It provides an easy-to-use interface for detecting and classifying entities in text.
 
+## Quick Demo
+
+Check out this 20-second demo of DataFog Instructor in action:
+
+[![DataFog Instructor Demo](https://img.youtube.com/vi/xU8vtcsZCNU/0.jpg)](https://www.youtube.com/watch?v=xU8vtcsZCNU)
+
+This repo can be found at [datafog-ollama-demo](https://github.com/DataFog/datafog-ollama-demo)
+
+
+
 ## Installation
 
 To install the DataFog Instructor SDK, you can use pip:
