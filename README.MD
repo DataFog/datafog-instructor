@@ -14,17 +14,12 @@ This code for this streamlit demo can be found at [datafog-ollama-demo](https://
 
 ## Installation
 
-To install the DataFog Instructor SDK, you can use pip:
+It is still pre-release since I haven't added testing coverage, so you just need  To install the DataFog Instructor SDK, you can use pip:
 
 ```
-pip install datafog-instructor
+pip install pip install --pre datafog-instructor
 ```
 
-For development purposes, including testing and documentation tools:
-
-```
-pip install datafog-instructor[dev,docs]
-```
 
 ## Quick Start
 
