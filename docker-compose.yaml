@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  ollama:
+    image: ollama/ollama:0.2.0
+    container_name: ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        /bin/ollama serve &
+        sleep 5
+        ollama pull phi3:medium
+        wait
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
