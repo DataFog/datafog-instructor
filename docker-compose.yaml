@@ -13,7 +13,7 @@ services:
       - |
         /bin/ollama serve &
         sleep 5
-        ollama pull phi3:medium
+        ollama pull phi3
         wait
     restart: unless-stopped
 

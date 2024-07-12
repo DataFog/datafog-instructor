@@ -1,3 +1,7 @@
+import os
+os.environ['DATAFOG_LLM_ENDPOINT'] = 'http://localhost:11434'
+os.environ['DATAFOG_LLM_MODEL'] = 'phi3'
+
 from datafog_instructor import DataFog
 
 # Initialize DataFog with defaults
