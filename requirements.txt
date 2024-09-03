@@ -1,32 +1,25 @@
-# Core SDK dependencies
-pydantic==2.7.1
-ollama>=0.2.0,<0.3.0
-ollama-instructor==0.2.0
+torch
+gguf
+uvicorn[standard]
+requests==2.32.3
+spacy==3.7.5
+pydantic>=2.8.2,<3.0.0
+sentencepiece
+protobuf
+aiohttp
+numpy
+fastapi
+asyncio
+setuptools
+pydantic-settings==2.3.4
+typer==0.12.3
+sqlmodel
+sphinx
+cryptography
+rellm
+transformers
+sentence-transformers
 python-dotenv
-setuptools==58.1.0
-
-# LLM backend dependencies
-openai==1.12.0  # For OpenAI integration
-
-# Development and testing dependencies
-pytest==8.0.0
-black==24.1.1
-flake8==7.0.0
-mypy==1.8.0
-
-
-# Performance optimization
-functools32==3.2.3-2; python_version < "3.2"  # For LRU cache in Python 2
-
-# Type checking
-types-requests==2.31.0.20240218
-
-# Async support (if implemented)
-aiohttp==3.9.3
-
-# CLI tool dependencies
-click==8.1.7
-
-# Documentation
-sphinx==7.2.6
-sphinx-rtd-theme==2.0.0
+regex
+uuid
+rich
