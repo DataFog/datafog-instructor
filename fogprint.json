@@ -1,0 +1,6 @@
+{
+  "model_id": "gpt2",
+  "filename": "gpt2",
+  "default_pattern": "(PERSON|COMPANY|LOCATION|ORG)",
+  "model_type": "huggingface"
+}

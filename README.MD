@@ -10,16 +10,13 @@ Check out this 20-second demo of DataFog Instructor in action:
 
 This code for this streamlit demo can be found at [datafog-ollama-demo](https://github.com/DataFog/datafog-ollama-demo)
 
-
-
 ## Installation
 
-It is still pre-release since I haven't added testing coverage, so you just need  To install the DataFog Instructor SDK, you can use pip:
+It is still pre-release since I haven't added testing coverage, so you just need To install the DataFog Instructor SDK, you can use pip:
 
 ```
 pip install --pre datafog-instructor
 ```
-
 
 ## Quick Start
 
