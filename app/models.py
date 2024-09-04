@@ -58,7 +58,7 @@ class EntityDetector:
         self.initialize()  # Call initialize in the constructor
 
     def initialize(self, force: bool = False):
-        config_path = Path("fogprint.json")
+        config_path = Path("datafog_config.json")
         if config_path.exists() and not force:
             loaded_config = self.load_config()
             if loaded_config:
@@ -90,7 +90,7 @@ class EntityDetector:
             self.model = AutoModelForCausalLM.from_pretrained(self.config["model_id"])
 
     def load_config(self):
-        config_path = Path("config.json")
+        config_path = Path("datafog_config.json")
         if config_path.exists():
             with open(config_path, "r") as f:
                 return json.load(f)

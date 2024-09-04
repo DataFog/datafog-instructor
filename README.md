@@ -2,21 +2,13 @@
 
 ## Demo
 
-To see DataFog Instructor in action, check out this demo:
-
-<video width="640" height="360" controls>
-  <source src="public/common-commands.mov" type="video/quicktime">
-  Your browser doesn't support embedded videos.
-</video>
-
-This demo showcases the key features and workflow of DataFog Instructor.
-
-datafog-instructor is a tool that allows users to take open-source transformer models and constrain the output to regex-defined expressions. Take a look at our roadmap below if you'd like to see what's coming up!
+datafog-instructor lets you use open-source LLMs (HF models, models ending in .gguf) and instruct them to return only specific, user-defined outputs like entity tags, JSON-only structured output, and synthetic data templates, among others.  
+We do this by using advanced ML methods that constrain the set of tokens a model will generate next when it's providing a response, and this allows us to achieve a far higher rate of accuracy and precision than baseline LLM output methods (for more, see the evals.ipynb file in examples).
 
 ## Installation
 
 ```
-pip install --pre datafog-instructor
+pip install --upgrade datafog-instructor
 ```
 
 ## Quick Start
@@ -32,15 +24,15 @@ Which should show you a screen like this:
 
 ### Initialize
 
-Type
+Begin by entering the following into your terminal post-install:
 
 ```
 datafog-instructor init
 ```
 
-into your console, and a default config file containing information about the model, tokenizer, regex_pattern gets loaded into your working directory.
+a default config file containing information about the model, tokenizer, regex_pattern gets loaded into your working directory.
 
-You can see the contents of that by typing:
+You can see the contents of that file by typing:
 
 ```
 datafog-instructor show-fogprint
@@ -52,7 +44,7 @@ What is a fogprint? A fogprint is a template that you can re-use, with specific 
 
 ```
 
-python -m entity_detection list-entities
+datafog-instructor list-entities
 
 ```
 
@@ -64,7 +56,7 @@ You should see a list of default entity types: PERSON, COMPANY, LOCATION, and OR
 
 ```
 
-python -m entity_detection detect-entities --prompt "Apple Inc. was founded by Steve Jobs in Cupertino, California."
+datafog-instructor detect-entities --prompt "Apple Inc. was founded by Steve Jobs in Cupertino, California."
 
 ```
 
@@ -74,7 +66,7 @@ This will output a table of detected entities, their positions, and types.
 
 ```
 
-python -m entity_detection show-fogprint
+datafog-instructor show-fogprint
 
 ```
 
@@ -89,7 +81,7 @@ To change the default model or pattern:
 
 ```
 
-python -m entity_detection init --force
+datafog-instructor init --force
 
 ```
 
@@ -101,23 +93,11 @@ Follow the prompts to update your configuration.
 
 ```
 
-python -m entity_detection detect-entities --prompt "Your text here" --max-new-tokens 100
+datafog-instructor detect-entities --prompt "Your text here" --max-new-tokens 100
 
 ```
 
 - For batch processing or integration into your Python projects, import the `EntityDetector` class from `models.py`.
-
-## Roadmap
-
-Exciting features are coming soon to enhance the SDK's capabilities:
-
-1. **Regex Layer**: We're working on adding a customizable regex layer for even more precise entity detection.
-2. **Embeddings Layer**: Future versions will incorporate an embeddings layer to improve entity recognition accuracy.
-
-Stay tuned for updates!
-
-```
-
 
 ## Development and Testing
 
@@ -125,7 +105,7 @@ For development purposes, you can install additional dependencies:
 
 ```
 
-pip install requirements-dev.txt
+python -m venv venv && source venv/bin/activate && pip install requirements-dev.txt
 
 ## Documentation
 
@@ -159,3 +139,4 @@ If you encounter any problems or have any questions, please open an issue on the
 - Documentation: https://docs.datafog.ai
 - Twitter: https://twitter.com/datafoginc
 - GitHub: https://github.com/datafog/datafog-instructor
+```

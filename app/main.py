@@ -76,7 +76,7 @@ def detect_entities(
 @app.command()
 def list_entities():
     """List all entities in the fogprint."""
-    fogprint_path = Path("fogprint.json")
+    fogprint_path = Path("datafog_config.json")
     if not fogprint_path.exists():
         console.print("[red]Fogprint not found. Use 'init' to create one.[/red]")
         return
@@ -100,7 +100,7 @@ def list_entities():
 @app.command()
 def show_fogprint():
     """Display the current fogprint configuration."""
-    fogprint_path = Path("fogprint.json")
+    fogprint_path = Path("datafog_config.json")
     if not fogprint_path.exists():
         console.print("[red]Fogprint not found. Use 'init' to create one.[/red]")
         return
