@@ -48,21 +48,83 @@ datafog-instructor show-fogprint
 
 What is a fogprint? A fogprint is a template that you can re-use, with specific configuration settings for the models, filenames, model_ids, and other important information to instruct an LLM to detect entities. This file is currently saved as fogprint.json.
 
-## Features
+### Verify the installation:
 
-### Detect Entities
+```
 
-### Manage Entity Types
+python -m entity_detection list-entities
 
-## Default Entity Types
+```
 
-## Error Handling
+You should see a list of default entity types: PERSON, COMPANY, LOCATION, and ORG.
+
+## Sample Operations
+
+### Detect Entities in Text
+
+```
+
+python -m entity_detection detect-entities --prompt "Apple Inc. was founded by Steve Jobs in Cupertino, California."
+
+```
+
+This will output a table of detected entities, their positions, and types.
+
+### Display Current Configuration
+
+```
+
+python -m entity_detection show-fogprint
+
+```
+
+This command will show you the current configuration stored in `fogprint.json`.
+
+### Reinitialize with Custom Settings
+
+To change the default model or pattern:
+
+1. Edit the `fogprint.json` file directly, or
+2. Use the `init` command with the `--force` flag:
+
+```
+
+python -m entity_detection init --force
+
+```
+
+Follow the prompts to update your configuration.
+
+## Advanced Usage
+
+- Adjust the maximum number of tokens generated:
+
+```
+
+python -m entity_detection detect-entities --prompt "Your text here" --max-new-tokens 100
+
+```
+
+- For batch processing or integration into your Python projects, import the `EntityDetector` class from `models.py`.
+
+## Roadmap
+
+Exciting features are coming soon to enhance the SDK's capabilities:
+
+1. **Regex Layer**: We're working on adding a customizable regex layer for even more precise entity detection.
+2. **Embeddings Layer**: Future versions will incorporate an embeddings layer to improve entity recognition accuracy.
+
+Stay tuned for updates!
+
+```
+
 
 ## Development and Testing
 
 For development purposes, you can install additional dependencies:
 
 ```
+
 pip install requirements-dev.txt
 
 ## Documentation
@@ -97,111 +159,3 @@ If you encounter any problems or have any questions, please open an issue on the
 - Documentation: https://docs.datafog.ai
 - Twitter: https://twitter.com/datafoginc
 - GitHub: https://github.com/datafog/datafog-instructor
-
-# Entity Detection SDK: Installation and Getting Started Guide
-
-Welcome to the Entity Detection SDK! This powerful tool uses transformers and regex-constrained outputs to accurately identify entities in text. Follow this guide to get up and running quickly.
-
-## Installation
-
-1. Clone the repository:
-
-```
-
-git clone https://github.com/your-username/entity-detection-sdk.git
-cd entity-detection-sdk
-
-```
-
-2. Create a virtual environment (recommended):
-
-```
-
-python -m venv venv
-source venv/bin/activate # On Windows, use `venv\Scripts\activate`
-
-```
-
-3. Install the required dependencies:
-```
-
-pip install -r requirements.txt
-
-```
-
-## Getting Started
-
-1. Initialize the SDK:
-
-```
-
-python -m entity_detection init
-
-```
-
-This will create a `fogprint.json` file with default settings.
-
-2. Verify the installation:
-```
-
-python -m entity_detection list-entities
-
-```
-You should see a list of default entity types: PERSON, COMPANY, LOCATION, and ORG.
-
-## Sample Operations
-
-### Detect Entities in Text
-
-```
-
-python -m entity_detection detect-entities --prompt "Apple Inc. was founded by Steve Jobs in Cupertino, California."
-
-```
-
-This will output a table of detected entities, their positions, and types.
-
-### Display Current Configuration
-
-```
-
-python -m entity_detection show-fogprint
-
-```
-
-This command will show you the current configuration stored in `fogprint.json`.
-
-### Reinitialize with Custom Settings
-
-To change the default model or pattern:
-
-1. Edit the `fogprint.json` file directly, or
-2. Use the `init` command with the `--force` flag:
-```
-
-python -m entity_detection init --force
-
-```
-Follow the prompts to update your configuration.
-
-## Advanced Usage
-
-- Adjust the maximum number of tokens generated:
-
-```
-
-python -m entity_detection detect-entities --prompt "Your text here" --max-new-tokens 100
-
-```
-
-- For batch processing or integration into your Python projects, import the `EntityDetector` class from `models.py`.
-
-## Roadmap
-
-Exciting features are coming soon to enhance the SDK's capabilities:
-
-1. **Regex Layer**: We're working on adding a customizable regex layer for even more precise entity detection.
-2. **Embeddings Layer**: Future versions will incorporate an embeddings layer to improve entity recognition accuracy.
-
-Stay tuned for updates!
-```
