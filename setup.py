@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 
 def __version__():
-    return "0.1.0b11"  # Incremented version number
+    return "0.1.0b13"  # Incremented version number
 
 
 project_urls = {
@@ -25,7 +25,7 @@ setup(
     description="Scan, redact, and manage PII in your documents before they get uploaded to a Retrieval Augmented Generation (RAG) system.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=find_packages(),
+    packages=find_packages(include=['app', 'app.*']),
     install_requires=[
         "torch",
         "gguf",
@@ -52,6 +52,8 @@ setup(
         "regex",
         "uuid",
         "rich",
+        "groq",  # Added for Groq API support
+        "instructor",  # Added for instructor library
     ],
     extras_require={
         "dev": [
@@ -74,7 +76,7 @@ setup(
     python_requires=">=3.10,<3.13",
     entry_points={
         "console_scripts": [
-            "datafog-instructor=app.main:app",
+            "datafog-instructor=app.main:main",
         ],
     },
     classifiers=[
@@ -90,7 +92,7 @@ setup(
         "Intended Audience :: Information Technology",
         "Intended Audience :: System Administrators",
     ],
-    keywords="transformers, models, language, models, embeddings, sentence-transformers, rag, huggingface, hugging-face, hugging-face-transformers, huggingface-transformers, huggingface-models, huggingface-embeddings, huggingface-sentence-transformers",
+    keywords="transformers, models, language, models, embeddings, sentence-transformers, rag, huggingface, hugging-face, hugging-face-transformers, huggingface-transformers, huggingface-models, huggingface-embeddings, huggingface-sentence-transformers, pii, data privacy, data protection",
     maintainer="Sid Mohan (DataFog, Inc.)",
     maintainer_email="sid@datafog.ai",
     url="https://datafog.ai",

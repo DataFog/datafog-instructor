@@ -36,3 +36,4 @@ docs/*
 !docs/*.rst
 !docs/conf.py
 scratch.py
+prd.md
