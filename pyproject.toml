@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "datafog-instructor"
+version = "0.1.0"
+description = ""
+authors = ["Sid Mohan <sid@datafog.ai>"]
+readme = "README.md"
+packages = [
+    { include = "app"},
+]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+transformers = "^4.44.2"
+pandas = "^2.2.2"
+sqlmodel = "^0.0.22"
+sentence-transformers = "^3.1.0"
+openai = "^1.45.0"
+pydantic = "2.9.1"
+instructor = "^1.4.2"
+python-dotenv = "^1.0.1"
+nest-asyncio = "^1.6.0"
+typer = "^0.12.5"
+anthropic = "^0.34.2"
+fastapi = "^0.115.0"
+logfire = {extras = ["fastapi"], version = "^0.53.0"}
+uvicorn = {extras = ["standard"], version = "^0.30.6"}
+pytest = "^8.3.3"
+
+
+[tool.poetry.scripts]
+start = "uvicorn app.main:app --reload"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

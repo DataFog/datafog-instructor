@@ -1,115 +1,253 @@
-import json
-from pathlib import Path
+from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Request
+from openai import AsyncOpenAI
+import instructor
+import logfire
+import asyncio
+from collections.abc import Iterable
+from fastapi.responses import StreamingResponse
+from dotenv import load_dotenv
+import os
+from typing import List, Dict
+from sqlalchemy import create_engine
+from sqlmodel import SQLModel, Field
 from typing import Optional
+import pandas as pd
+from sqlmodel import SQLModel, Field
+from typing import Tuple
+import traceback
 
-import typer
-from rich.console import Console
-from rich.table import Table
+class DetectedPII(BaseModel):
+    """
+    Detected PII data from a document
+    """
+    index: int
+    data_type: str
+    pii_value: str
 
-from .models import CustomEntities, CustomEntity, EntityDetector, EntityType
 
-app = typer.Typer()
-console = Console()
+class PIIDetectionFlow(BaseModel):
+    """
+    Extracted PII data from a document, all data_types should try to have consistent property names
+    """
 
+    detected_pii: list[DetectedPII] = Field(..., min_items=1)
 
-@app.command()
-def init(
-    force: bool = typer.Option(False, "--force", "-f", help="Force reinitialization")
-):
-    """Initialize/reinitialize datafog-instructor with a new fogprint file."""
-    if force:
-        console.print(
-            "[yellow]Warning: Forcing reinitialization. This will overwrite existing configuration.[/yellow]"
-        )
-        typer.confirm("Are you sure you want to continue?", abort=True)
+    def __init__(self, **data):
+        super().__init__(**data)
+        self._validate_detected_pii()
 
-    entity_detector = EntityDetector()
+    def _validate_detected_pii(self):
+        """
+        Validates the detected_pii list to ensure it meets the required conditions.
+
+        Preconditions:
+            - detected_pii is a non-empty list
+
+        Postconditions:
+            - All items in detected_pii are of type DetectedPII
+            - All DetectedPII objects have unique indices
+
+        Raises:
+            ValueError: If any of the conditions are not met
+        """
+        if not self.detected_pii:
+            raise ValueError("detected_pii list must not be empty")
+
+        indices = set()
+        for item in self.detected_pii:
+            if not isinstance(item, DetectedPII):
+                raise ValueError(f"All items in detected_pii must be of type DetectedPII. Found: {type(item)}")
+            if item.index in indices:
+                raise ValueError(f"Duplicate index found in detected_pii: {item.index}")
+            indices.add(item.index)
+
+        logfire.info("PIIDetectionFlow initialized", 
+                     pii_count=len(self.detected_pii), 
+                     unique_indices=len(indices))
+
+    def __len__(self):
+        return len(self.detected_pii)
+
+    def __iter__(self):
+        return iter(self.detected_pii)
+
+    def __getitem__(self, index):
+        return self.detected_pii[index]
+
+    def redact_pii(self, content):
+        """
+        Iterates over the private data and replaces the value with a placeholder in the form of
+        <{data_type}_{i}>
+
+        Preconditions:
+            - self.detected_pii is a non-empty list of DetectedPII objects
+            - content is a non-empty string
+
+        Postconditions:
+            - Returns a string with all PII values replaced by placeholders
+            - The number of replacements made is equal to the length of self.detected_pii
+            - The returned string is not empty
+
+        Invariants:
+            - The structure of the content string is preserved, only PII values are replaced
+        """
+
+        # Preconditions
+        assert self.detected_pii, "detected_pii list must not be empty"
+        assert content, "content must not be empty"
+
+        original_content = content
+        replacement_count = 0
+
+        for i, data in enumerate(self.detected_pii):
+            new_content = content.replace(data.pii_value, f"<{data.data_type}_{i}>")
+            if new_content != content:
+                replacement_count += 1
+            content = new_content
+            logfire.info(f"Replaced PII: {data.data_type}", index=i, data_type=data.data_type)
+
+        # Postconditions
+        assert replacement_count == len(self.detected_pii), "Number of replacements should match detected PII count"
+        assert content, "Redacted content must not be empty"
+        assert len(content) >= len(original_content), "Redacted content should not be shorter than original"
+
+        logfire.info("PII redaction completed", 
+                     original_length=len(original_content), 
+                     redacted_length=len(content), 
+                     replacements_made=replacement_count)
+
+        return content
+
+app = FastAPI()
+
+# ----------------------- Middleware Configuration -----------------------
+# Configure logfire before adding any middleware to ensure they are set up correctly
+logfire.configure(pydantic_plugin=logfire.PydanticPlugin(record="all"))
+
+# Instrument FastAPI with logfire middleware
+logfire.instrument_fastapi(app)
+# ----------------------- End Middleware Configuration --------------------
+
+# Global variables to be initialized on startup
+openai_client: Optional[AsyncOpenAI] = None
+client: Optional[instructor.from_openai] = None
+
+@app.on_event("startup")
+async def initialize_app():
+    """
+    Startup event to initialize and validate environment variables and clients.
+    
+    Preconditions:
+        - Environment variables like OPENAI_API_KEY must be set.
+    
+    Postconditions:
+        - openai_client is initialized and ready to use.
+    """
+    load_dotenv()
+    global OPENAI_API_KEY, openai_client, client
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    
+    if not OPENAI_API_KEY:
+        logfire.error("OPENAI_API_KEY is not set in the environment")
+        raise EnvironmentError("OPENAI_API_KEY must be set in the environment variables")
+    
+    openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+    
+    assert isinstance(app, FastAPI), "app must be an instance of FastAPI"
+    assert isinstance(openai_client, AsyncOpenAI), "openai_client must be an instance of AsyncOpenAI"
+    
+    logfire.info("Application initialized",
+                 api_key_set=bool(OPENAI_API_KEY),
+                 app_type=type(app).__name__,
+                 client_type=type(openai_client).__name__)
+    
+    logfire.instrument_openai(openai_client)
+    client = instructor.from_openai(openai_client)
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """
+    Shutdown event to perform cleanup tasks.
+    """
+    if openai_client:
+        await openai_client.aclose()
+    logfire.info("Application shutdown complete.")
+
+@app.post("/extract-pii")
+async def extract_pii(request: Request) -> PIIDetectionFlow:
+    """
+    Extracts PII data from a document
+
+    Preconditions:
+        - content is a non-empty string in the request body
+    
+    Postconditions:
+        - Returns a PIIDetectionFlow object
+        - The returned object contains a non-empty list of DetectedPII objects in its detected_pii attribute
+
+    Invariants:
+        - The original content is not modified
+        - The API call to OpenAI is made with the correct model and response_model
+    """
+    # Preconditions
+    body = await request.json()
+    assert isinstance(body, dict), "Request body must be a valid JSON object"
+    
+    content = body.get("content")
+    
+    # Invariant: content should not be modified after extraction
+    original_content = content
+    
+    if not content or not isinstance(content, str) or content.strip() == "":
+        logfire.error("Invalid or missing content in request", body=body)
+        raise HTTPException(status_code=422, detail="Content is required and must be a non-empty string")
+    
+    # Postconditions
+    assert content == original_content, "Content should not be modified during extraction"
+    assert isinstance(content, str) and content.strip() != "", "Content must be a non-empty string"
+    
+    logfire.info("Content extracted from request", content_length=len(content))
+
+    # Preconditions
+    assert isinstance(content, str) and content.strip(), "Content must be a non-empty string"
+    assert OPENAI_API_KEY, "OPENAI_API_KEY must be set"
+
     try:
-        entity_detector.initialize(force=force)
-        console.print("[green]Initialization complete![/green]")
+        logfire.info("Initiating PII extraction", content_length=len(content))
+        
+        response = await client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": content}],
+            response_model=PIIDetectionFlow,
+        )
+        
+        # Postconditions
+        assert isinstance(response, PIIDetectionFlow), "Response must be a PIIDetectionFlow object"
+        assert response.detected_pii, "Extracted PII data must not be empty"
+        
+        logfire.info("Successfully extracted PII data", 
+                     pii_count=len(response.detected_pii),
+                     pii_types=[pii.data_type for pii in response.detected_pii])
+        
+        # Invariant
+        assert content == original_content, "Original content must not be modified during extraction"
+        
+        return response
+    except ValueError as ve:
+        logfire.warning("No PII data extracted", error=str(ve))
+        raise HTTPException(status_code=204, detail="No PII data found in the content")
+    except AssertionError as ae:
+        logfire.error("Assertion failed during PII extraction", error=str(ae))
+        raise HTTPException(status_code=500, detail=str(ae))
     except Exception as e:
-        console.print(f"[red]Error during initialization: {str(e)}[/red]")
-        console.print(
-            "[yellow]Ensure the model file 'gpt2' exists in the current directory.[/yellow]"
-        )
-    # Display model info in a table
-    model_info = entity_detector.get_model_info()
-    table = Table(title="Model Configuration")
-    table.add_column("Setting", style="cyan")
-    table.add_column("Value", style="magenta")
-
-    for key, value in model_info.items():
-        table.add_row(key, value)
-
-    console.print(table)
-
-
-@app.command()
-def detect_entities(
-    prompt: str = typer.Option(
-        ..., "--prompt", "-p", help="Text to detect entities in"
-    ),
-    max_new_tokens: int = typer.Option(
-        50, "--max-new-tokens", "-m", help="Maximum number of new tokens to generate"
-    ),
-):
-    """Classify entities in the given text."""
-    entity_detector = EntityDetector()
-    entities = entity_detector.detect_entities(prompt, max_new_tokens)
-    table = Table(title="Detected Entities")
-    table.add_column("Text", style="cyan")
-    table.add_column("Start", style="magenta")
-    table.add_column("End", style="magenta")
-    table.add_column("Entity Type", style="green")
-
-    for entity in entities:
-        table.add_row(
-            entity.text,
-            str(entity.start),
-            str(entity.end),
-            entity.entity_type.value,  # Convert EntityType to string
-        )
-
-    console.print(table)
-
-
-@app.command()
-def list_entities():
-    """List all entities in the fogprint."""
-    fogprint_path = Path("datafog_config.json")
-    if not fogprint_path.exists():
-        console.print("[red]Fogprint not found. Use 'init' to create one.[/red]")
-        return
-
-    with open(fogprint_path, "r") as f:
-        fogprint = json.load(f)
-
-    default_pattern = fogprint.get("default_pattern", "")
-    entities = default_pattern.strip("()").split("|")
-
-    table = Table(title="Entities")
-    table.add_column("Entity Type", style="cyan")
-
-    for entity in entities:
-        if entity in EntityType.__members__:
-            table.add_row(entity)
-
-    console.print(table)
-
-
-@app.command()
-def show_fogprint():
-    """Display the current fogprint configuration."""
-    fogprint_path = Path("datafog_config.json")
-    if not fogprint_path.exists():
-        console.print("[red]Fogprint not found. Use 'init' to create one.[/red]")
-        return
-
-    with open(fogprint_path, "r") as f:
-        fogprint_content = f.read()
-
-    console.print(fogprint_content)
-
+        logfire.error("Unexpected error during PII extraction", 
+                      error=str(e), 
+                      error_type=type(e).__name__,
+                      traceback=traceback.format_exc())
+        raise HTTPException(status_code=500, detail="Failed to extract PII data")
 
 if __name__ == "__main__":
-    app()
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)

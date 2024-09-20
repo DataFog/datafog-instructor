@@ -1,33 +1,38 @@
 # DataFog Instructor
 
-## Demo
+v0.1.0 Release Notes
 
-datafog-instructor lets you use open-source LLMs (HF models, models ending in .gguf) and instruct them to return only specific, user-defined outputs like entity tags, JSON-only structured output, and synthetic data templates, among others.  
-We do this by using advanced ML methods that constrain the set of tokens a model will generate next when it's providing a response, and this allows us to achieve a far higher rate of accuracy and precision than baseline LLM output methods (for more, see the evals.ipynb file in examples).
+Hi folks, based on some feedback a few important changes:
 
-## Installation
+- We have shifted away from the CLI approach to a more flexible API-based solution. For v0.1.0, you'll need to clone the repository and install dependencies using Poetry.
+- The env.example file now includes a LOGFIRE_TOKEN. You can obtain one by signing up at https://logfire.pydantic.dev. Logfire is an observability platform developed by the Pydantic team, designed to assist with debugging and monitoring, including LLM calls.
+- This version focuses on producing consistent LLM outputs for PII detection and incorporates extensive error handling to create a more production-ready service.
+- We've implemented robust validation and error handling throughout the codebase to ensure reliability and ease of debugging.
 
-```
-pip install --upgrade datafog-instructor
-```
-
-## Quick Start
-
-To see a list of all available options, you can type
+Start by cloning the repo and installing the dependencies using poetry:
 
 ```
-datafog-instructor --help
+git clone https://github.com/datafog/datafog-instructor.git
+cd datafog-instructor
+poetry install
 ```
 
-Which should show you a screen like this:
-![Help Menu](public/help-menu.png)
+You'll also need to create a `.env` file with the OPENAI_API_KEY and GROQ_API_KEY.  You can get these by signing up for accounts at https://openai.com/ and https://www.groq.com/.
 
-### Initialize
-
-Begin by entering the following into your terminal post-install:
+Once you have the .env file, you can run the following to start the service:
 
 ```
-datafog-instructor init
+uvicorn app.main:app --reload
+```
+
+
+## Sample CURL Commands
+
+
+```
+curl -X POST "http://localhost:8000/extract-pii" \     
+     -H "Content-Type: application/json" \
+     -d '{"content": "My name is John Doe and my email is john.doe@example.com. My phone number is 123-456-7890."}'
 ```
 
 a default config file containing information about the model, tokenizer, regex_pattern gets loaded into your working directory.

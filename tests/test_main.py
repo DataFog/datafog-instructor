@@ -1,69 +1,23 @@
-import json
-from pathlib import Path
-
 import pytest
-from typer.testing import CliRunner
+from fastapi.testclient import TestClient
+from app.main import app, PIIDataExtraction, Entity
 
-from app.main import app
+client = TestClient(app)
 
-runner = CliRunner()
+@pytest.mark.asyncio
+async def test_extract_pii():
+    content = "John Doe's SSN is 123-45-6789 and his email is john@example.com"
+    response = client.post("/extract-pii", json={"content": content})
+    assert response.status_code == 200
+    pii_data = PIIDataExtraction(**response.json())
+    assert len(pii_data.private_data) > 0
+    assert any(data.data_type == "SSN" for data in pii_data.private_data)
+    assert any(data.data_type == "EMAIL" for data in pii_data.private_data)
 
+@pytest.mark.asyncio
+async def test_extract_pii_stream():
+    content = "Jane Doe's phone number is (555) 123-4567"
+    response = client.post("/extract-pii-stream", json={"content": content})
+    assert response.status_code == 200
+    # Note: Streaming response testing might require additional setup
 
-def test_init():
-    result = runner.invoke(app, ["init"])
-    assert result.exit_code == 0
-    assert "Initialization complete!" in result.stdout
-    assert Path("fogprint.json").exists()
-
-
-def test_init_force():
-    result = runner.invoke(app, ["init", "--force"], input="y\n")
-    assert result.exit_code == 0
-    assert "Forcing reinitialization" in result.stdout
-
-
-def test_detect_entities():
-    result = runner.invoke(
-        app, ["detect-entities", "--prompt", "John lives in New York"]
-    )
-    assert result.exit_code == 0
-
-
-# def test_list_entities():
-#     result = runner.invoke(app, ["list-entities"])
-#     assert result.exit_code == 0
-#     assert "Entities" in result.stdout
-
-
-def test_show_fogprint():
-    result = runner.invoke(app, ["show-fogprint"])
-    assert result.exit_code == 0
-    assert "default_pattern" in result.stdout
-
-
-@pytest.fixture
-def mock_fogprint(tmp_path):
-    fogprint = {
-        "default_pattern": "(PERSON|LOCATION|ORGANIZATION)",
-        "custom_entities": [],
-    }
-    fogprint_path = tmp_path / "fogprint.json"
-    fogprint_path.write_text(json.dumps(fogprint))
-    return fogprint_path
-
-
-# def test_list_entities_with_mock(mock_fogprint, monkeypatch):
-#     monkeypatch.chdir(mock_fogprint.parent)
-#     result = runner.invoke(app, ["list-entities"])
-#     assert result.exit_code == 0
-#     assert "PERSON" in result.stdout
-#     assert "LOCATION" in result.stdout
-#     assert "ORGANIZATION" in result.stdout
-
-
-def test_show_fogprint_with_mock(mock_fogprint, monkeypatch):
-    monkeypatch.chdir(mock_fogprint.parent)
-    result = runner.invoke(app, ["show-fogprint"])
-    assert result.exit_code == 0
-    assert "default_pattern" in result.stdout
-    assert "custom_entities" in result.stdout
